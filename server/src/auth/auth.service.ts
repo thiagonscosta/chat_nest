@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from 'src/user/dto/login.dto';
 import { UserService } from 'src/user/user.service';
+import { JwtService } from '@nestjs/jwt';
 import { compareSync } from 'bcrypt';
 import { User } from '@prisma/client';
 
@@ -29,7 +30,7 @@ export class AuthService {
   }
 
   private async jwtTokenGenerate(user: User): Promise<string> {
-    const payload = { username: user.username, sub: user.id };
+    const payload = { username: user, sub: user.id };
     return this.jwtService.signAsync(payload);
   }
 }

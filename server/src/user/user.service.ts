@@ -17,7 +17,7 @@ export class UserService {
     });
   }
 
-  async getId(id: string): Promise<User | null> {
+  async getById(id: string): Promise<User | null> {
     return await this.prismaService.user.findUnique({
       where: {
         id,
