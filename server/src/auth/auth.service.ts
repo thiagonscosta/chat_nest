@@ -6,6 +6,7 @@ import { User } from '@prisma/client';
 import { Auth, google } from 'googleapis';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
+import { AuthUserDto } from 'src/user/dto/auth-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -71,5 +72,43 @@ export class AuthService {
     return this.jwtService.signAsync(payload);
   }
 
-  async authenticateWithGoogle(token: string) {}
+  async authenticateWithGoogle(token: string) {
+    const tokenInfo = await this.oauthClient.getTokenInfo(token);
+
+    const email = tokenInfo.email;
+
+    const user = await this.userService.getByEmail(email);
+
+    const jwt = await this.jwtTokenGenerate(user);
+
+    const authUser: AuthUserDto = {
+      user,
+      token: jwt,
+    };
+
+    return authUser;
+  }
+
+  async registerWithGoogle(token: string) {
+    const userInfo = await this.getUserData(token);
+
+    const userData = {
+      username: userInfo.name ?? userInfo.email,
+      email: userInfo.email,
+    };
+  }
+
+  async getUserData(token: string) {
+    const userInfoClient = google.oauth2('v2').userinfo;
+
+    this.oauthClient.setCredentials({
+      access_token: token,
+    });
+
+    const userInfo = await userInfoClient.get({
+      auth: this.oauthClient,
+    });
+
+    return userInfo.data;
+  }
 }
