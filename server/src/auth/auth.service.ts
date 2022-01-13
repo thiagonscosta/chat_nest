@@ -36,13 +36,16 @@ export class AuthService {
   }
 
   async registerUser(data: CreateUserDto) {
+    console.log(data);
     const hashPassword = await bcrypt.hash(data.password, 10);
+    console.log(hashPassword);
     try {
       const createdUser = await this.userService.create({
         ...data,
         password: hashPassword,
       });
       createdUser.password = undefined;
+      return createdUser;
     } catch (error) {
       if (error?.code === '23505') {
         throw new HttpException(
@@ -92,10 +95,29 @@ export class AuthService {
   async registerWithGoogle(token: string) {
     const userInfo = await this.getUserData(token);
 
-    const userData = {
+    const data = {
       username: userInfo.name ?? userInfo.email,
       email: userInfo.email,
     };
+
+    try {
+      const createdUser = await this.userService.create({
+        ...data,
+        password: null,
+      });
+      return createdUser;
+    } catch (error) {
+      if (error?.code === '23505') {
+        throw new HttpException(
+          'User with that email already exists',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      throw new HttpException(
+        'Something went wrong',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async getUserData(token: string) {
