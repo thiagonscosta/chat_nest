@@ -25,9 +25,15 @@ export class AuthService {
   async authenticate(data: LoginDto) {
     const user = await this.userService.getByEmail(data.email);
 
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
     await this.verifyPassword(data.password, user.password);
 
     const token = await this.jwtTokenGenerate(user);
+
+    user.password = undefined;
 
     return {
       user,
@@ -36,7 +42,6 @@ export class AuthService {
   }
 
   async registerUser(data: CreateUserDto) {
-    console.log(data);
     const hashPassword = await bcrypt.hash(data.password, 10);
     console.log(hashPassword);
     try {
@@ -64,7 +69,7 @@ export class AuthService {
     const match = await bcrypt.compare(plainTextPassword, hashPassword);
     if (!match) {
       throw new HttpException(
-        'Wrong credentials provided',
+        'Email or password is incorrect',
         HttpStatus.BAD_REQUEST,
       );
     }
